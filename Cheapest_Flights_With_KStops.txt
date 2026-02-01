@@ -1,0 +1,64 @@
+There are multiple ways of solving this question - 
+1. Djikstra's Algorithm - 
+In normal Djikstra we only take care of the minimum distance but not the number of stops,
+hence we will add one more parameter in min heap i.e. stops along with distance.
+We will always choose the cheapest flights using the min heap and when we reach dst for the first time,
+that will be the optimal way.
+
+Algorithm - 
+1. Create a adjacency list adj u as key and [v,cost] as value
+2. Create dist[city][stopUsed] = bestCost(intially all infinity other than dist[src][0] because it will be 0) - But why?
+So if you remember Djikstra we use to make dist vector taking only city into account but this time we have to consider the stops as well.
+3. Push (0,src,-1) in minheap, here 0 is the distance to reach src and -1 is no of stops so far(so that first flight will be considered as 0 stops)
+4. While heap not empty:
+    a. pop (cost,src,stops)
+    b. if city == dst return cost
+    c. if stops == k, we can't more stops so continue
+    d. if this cost is worse than the best recorded for this (city,stops+1) then skip
+    e. for each neighbor(nextCity,price) in adj[src]:
+        i. nextCost = price + cost
+        ii. nextStops = stops + 1
+        iii. if nextCost > dist[nextCity][nextStops+1] then update this positon in dist matrix and push this triplet(cost,city,stops) in heap.
+5. if code reaches this point(out of while empty loop) that means we were not able to find dst in these no of stops and hence return -1
+
+Note - If we compare the above algo to normal Djikstra, then there changes in only 2 places - 
+1. We have added one more check i.e. if(stops==k) continue
+2. Instead of making dist vectory of size n(no of nodes), make it of size n*k
+
+Python Code - 
+class Solution:
+    def findCheapestPrice(self, n: int, flights: List[List[int]], src: int, dst: int, k: int) -> int:
+        adj = [[] for _ in range(n)]
+        INF = float("inf")  # infinity exist for floats only in python
+        dist = [[INF]*(k+4) for _ in range(n)]
+
+        for u,v,cst in flights:
+            adj[u].append([v,cst])
+        minHeap = [(0,src,-1)]
+        dist[src][0] = 0
+        while len(minHeap):
+            cost, node, stops = heapq.heappop(minHeap)
+            if node == dst:
+                return cost
+            if stops == k or dist[node][stops+1]<cost:
+                continue
+            for neighbor,price in adj[node]:
+                nextCst = cost + price
+                nextStops = 1+stops
+                if dist[neighbor][nextStops+1] > nextCst:
+                    dist[neighbor][nextStops+1] = nextCst
+                    heapq.heappush(minHeap,(nextCst,neighbor,nextStops))
+        return -1
+            
+Time Complexity - 
+Since we are pushing (n,k) in heap, hence a node in heap can be processed at most for k+1 stop values, so total possible states = v*k
+In the worst case every edge can be processed k times and every operation will take log(v*k) time
+Hence TC will E*k*log(v*k)
+k can be atmost v, hence TC = E*k*log(v)
+
+Space Complexity - 
+Distance table - O(n*k)
+Adjacency List - O(E)
+Heap - O(n*k)
+Total SC - O(n*k + E)
+
